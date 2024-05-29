@@ -1,0 +1,58 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directory for compiled TypeScript files
+dist/
+
+# Optional npm cache directory
+.npm
+
+# Environment variables
+.env
+
+# MacOS
+.DS_Store
+
+# Debug log from TypeScript
+*.tsbuildinfo
+
+# VSCode
+.vscode/
+
+# TypeScript cache
+*.tscache
+
+# Temporary files
+tmp/
+temp/
+
+# Output of npm pack
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# pm2 process file
+pids/
+
+# WebStorm
+.idea/
+
+# IntelliJ
+*.iml
+
+# JetBrains
+.idea/
+
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+
+# End of list
