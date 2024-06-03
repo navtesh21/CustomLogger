@@ -1,10 +1,68 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
-type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+type LogLevel = "info" | "warn" | "error" | "debug";
+
+class Transport {
+  private logFilePath: string | null;
+  private logToConsole: boolean;
+
+  constructor(
+    logFilePath: string | null = null,
+    logToConsole: boolean = false
+  ) {
+    this.logFilePath = logFilePath;
+    this.logToConsole = logToConsole;
+  }
+
+  private async writeToFile(message: string) {
+    if (this.logFilePath) {
+      const logDir = path.dirname(this.logFilePath);
+      if (!fs.existsSync(logDir)) {
+        await fs.promises.mkdir(logDir, { recursive: true });
+      }
+
+      await fs.promises.appendFile(this.logFilePath, message + "\n", "utf8");
+    }
+  }
+
+  private colorize(level: LogLevel, message: string): string {
+    let color = "1";
+
+    switch (level) {
+      case "info":
+        color = "31";
+        break;
+      case "warn":
+        color = "33";
+        break;
+      case "error":
+        color = "32";
+        break;
+      case "debug":
+        color = "34";
+        break;
+      default:
+        return message;
+    }
+    return `\x1B[${color}m${message}\x1B`;
+  }
+
+  public async log(level: LogLevel, message: string) {
+    const coloredMessage = this.colorize(level, message);
+
+    if (this.logToConsole) {
+      console.log(coloredMessage, "hijn");
+    }
+
+    if (this.logFilePath) {
+      await this.writeToFile(coloredMessage); // Write colored message to file
+    }
+  }
+}
 
 class Logger {
-  private logFilePath: string;
+  private transport: Transport;
   private levels: Record<LogLevel, number> = {
     debug: 0,
     info: 1,
@@ -13,21 +71,9 @@ class Logger {
   };
   private currentLevel: LogLevel;
 
-  constructor(logFilePath: string, level: LogLevel = 'info') {
-    this.logFilePath = logFilePath;
+  constructor(transport: Transport, level: LogLevel = "info") {
+    this.transport = transport;
     this.currentLevel = level;
-    this.ensureLogFileExists();
-  }
-
-  private ensureLogFileExists() {
-    const logDir = path.dirname(this.logFilePath);
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirSync(logDir, { recursive: true });
-    }
-
-    if (!fs.existsSync(this.logFilePath)) {
-      fs.writeFileSync(this.logFilePath, '', { flag: 'a' });
-    }
   }
 
   private formatMessage(level: LogLevel, message: string): string {
@@ -42,37 +88,41 @@ class Logger {
   private async writeLog(level: LogLevel, message: string) {
     if (this.shouldLog(level)) {
       const formattedMessage = this.formatMessage(level, message);
-      try {
-        await fs.promises.appendFile(this.logFilePath, formattedMessage + '\n', 'utf8');
-      } catch (error) {
-        console.error(`Failed to write log: ${error}`);
-      }
+      await this.transport.log(level, formattedMessage);
     }
   }
 
   public async debug(message: string) {
-    await this.writeLog('debug', message);
+    await this.writeLog("debug", message);
   }
 
   public async info(message: string) {
-    await this.writeLog('info', message);
+    await this.writeLog("info", message);
   }
 
   public async warn(message: string) {
-    await this.writeLog('warn', message);
+    await this.writeLog("warn", message);
   }
 
   public async error(message: string) {
-    await this.writeLog('error', message);
+    await this.writeLog("error", message);
   }
 }
 
+const fileTransport = new Transport(
+  path.join(__dirname, "logs", "app.log"),
+  false
+);
+const consoleTransport = new Transport(null, true);
+
+const fileLogger = new Logger(fileTransport, "debug");
+const consoleLogger = new Logger(consoleTransport, "debug");
+
 (async () => {
-    const logger = new Logger(path.join(__dirname, 'logs', 'app.log'), 'debug');
-    await logger.info('This is an info message.');
-    await logger.warn('This is a warning message.');
-    await logger.error('This is an error message.');
-    await logger.debug('This is a debug message.');
-  })();
-  
-  
+  await fileLogger.info("This is an info message.");
+  await fileLogger.warn("This is a warning message.");
+  await fileLogger.error("This is an error message.");
+  await fileLogger.debug("This is a debug message.");
+})();
+
+export { Logger, Transport };
