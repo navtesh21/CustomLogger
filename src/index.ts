@@ -125,4 +125,4 @@ const consoleLogger = new Logger(consoleTransport, "debug");
   await fileLogger.debug("This is a debug message.");
 })();
 
-export { Logger, Transport };
+export { Logger, Transport, LogLevel };
